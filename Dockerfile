@@ -1,9 +1,9 @@
-# Pull from SpECTRE to get spectre tools
-FROM sxscollaboration/spectre:demo as demo
+# Start with black Ubuntu template
+FROM ubuntu:latest
 ARG XYCE_VERSION
 ARG TRILINOS_VERSION
 
-ENV TZ=America/Los_Angeles DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Los_Angeles DEBIAN_FRONTEND=noninteractive PATH="${PATH}"
 
 # # Build SpECTRE to all-pybindings mode
 # WORKDIR /work/spectre-build
@@ -81,7 +81,7 @@ RUN make -j$(nproc) && make install
 #   `pwd`/src/Xyce
 
 # Add Xyce to PATH and clean installation
-RUN echo 'PATH="/XyceInstall/Serial/bin:$PATH"' >> $HOME/.bashrc
+ENV PATH="/XyceInstall/Serial/bin:$PATH"
 RUN rm -rf /Xyce
 RUN rm -rf /Trilinos
 RUN rm -rf /Xyce-serial-build
@@ -89,12 +89,11 @@ RUN rm -rf /Trilinos-build
 
 # Install NgSPICE
 RUN apt-get update
-RUN apt-get install -y ngspice python3-pip iverilog
+RUN apt-get install -y ngspice iverilog
 
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
-RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+ENV PATH="${PATH}:$HOME/.cargo/env"
 
 # Make user comfortable at home
 WORKDIR /home
-ENTRYPOINT "/bin/bash"
