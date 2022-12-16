@@ -1,9 +1,17 @@
 # Pull from SpECTRE to get spectre tools
-FROM sxscollaboration/spectre:dev as dev
+FROM sxscollaboration/spectre:demo as demo
 ARG XYCE_VERSION
 ARG TRILINOS_VERSION
 
 ENV TZ=America/Los_Angeles DEBIAN_FRONTEND=noninteractive
+
+# # Build SpECTRE to all-pybindings mode
+# WORKDIR /work/spectre-build
+# RUN cmake -D CHARM_ROOT=/work/charm_7_0_0/multicore-linux-x86_64-gcc $SPECTRE_ROOT
+# RUN make -j(nproc) all-pybindings
+# RUN ./bin/LoadPython.sh
+# RUN rm -rf /work/spectre-build
+
 # The "folly" component currently fails if "fmt" is not explicitly installed first.
 RUN apt-get update && apt-get install -y cmake build-essential m4 python-dev-is-python3 \
   git gfortran bison flex libfl-dev libfftw3-dev libsuitesparse-dev libopenblas-dev \
@@ -18,39 +26,39 @@ RUN SRCDIR=/Trilinos; \
   FLAGS="-O3 -fPIC"; \
   cmake \
   -G "Unix Makefiles" \
-    -DCMAKE_C_COMPILER=gcc \
-    -DCMAKE_CXX_COMPILER=g++ \
-    -DCMAKE_Fortran_COMPILER=gfortran \
-    -DCMAKE_CXX_FLAGS="$FLAGS" \
-    -DCMAKE_C_FLAGS="$FLAGS" \
-    -DCMAKE_Fortran_FLAGS="$FLAGS" \
-    -DCMAKE_INSTALL_PREFIX=$ARCHDIR \
-    -DCMAKE_MAKE_PROGRAM="make" \
-    -DTrilinos_ENABLE_NOX=ON \
-    -DNOX_ENABLE_LOCA=ON \
-    -DTrilinos_ENABLE_EpetraExt=ON \
-    -DEpetraExt_BUILD_BTF=ON \
-    -DEpetraExt_BUILD_EXPERIMENTAL=ON \
-    -DEpetraExt_BUILD_GRAPH_REORDERINGS=ON \
-    -DTrilinos_ENABLE_TrilinosCouplings=ON \
-    -DTrilinos_ENABLE_Ifpack=ON \
-    -DTrilinos_ENABLE_Isorropia=ON \
-    -DTrilinos_ENABLE_AztecOO=ON \
-    -DTrilinos_ENABLE_Belos=ON \
-    -DTrilinos_ENABLE_Teuchos=ON \
-    -DTeuchos_ENABLE_COMPLEX=ON \
-    -DTrilinos_ENABLE_Amesos=ON \
-    -DAmesos_ENABLE_KLU=ON \
-    -DTrilinos_ENABLE_Sacado=ON \
-    -DTrilinos_ENABLE_Kokkos=OFF \
-    -DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF \
-    -DTrilinos_ENABLE_CXX11=ON \
-    -DTPL_ENABLE_AMD=ON \
-    -DAMD_LIBRARY_DIRS="/usr/lib" \
-    -DTPL_AMD_INCLUDE_DIRS="/usr/include/suitesparse" \
-    -DTPL_ENABLE_BLAS=ON \
-    -DTPL_ENABLE_LAPACK=ON \
-    $SRCDIR
+  -DCMAKE_C_COMPILER=gcc \
+  -DCMAKE_CXX_COMPILER=g++ \
+  -DCMAKE_Fortran_COMPILER=gfortran \
+  -DCMAKE_CXX_FLAGS="$FLAGS" \
+  -DCMAKE_C_FLAGS="$FLAGS" \
+  -DCMAKE_Fortran_FLAGS="$FLAGS" \
+  -DCMAKE_INSTALL_PREFIX=$ARCHDIR \
+  -DCMAKE_MAKE_PROGRAM="make" \
+  -DTrilinos_ENABLE_NOX=ON \
+  -DNOX_ENABLE_LOCA=ON \
+  -DTrilinos_ENABLE_EpetraExt=ON \
+  -DEpetraExt_BUILD_BTF=ON \
+  -DEpetraExt_BUILD_EXPERIMENTAL=ON \
+  -DEpetraExt_BUILD_GRAPH_REORDERINGS=ON \
+  -DTrilinos_ENABLE_TrilinosCouplings=ON \
+  -DTrilinos_ENABLE_Ifpack=ON \
+  -DTrilinos_ENABLE_Isorropia=ON \
+  -DTrilinos_ENABLE_AztecOO=ON \
+  -DTrilinos_ENABLE_Belos=ON \
+  -DTrilinos_ENABLE_Teuchos=ON \
+  -DTeuchos_ENABLE_COMPLEX=ON \
+  -DTrilinos_ENABLE_Amesos=ON \
+  -DAmesos_ENABLE_KLU=ON \
+  -DTrilinos_ENABLE_Sacado=ON \
+  -DTrilinos_ENABLE_Kokkos=OFF \
+  -DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=OFF \
+  -DTrilinos_ENABLE_CXX11=ON \
+  -DTPL_ENABLE_AMD=ON \
+  -DAMD_LIBRARY_DIRS="/usr/lib" \
+  -DTPL_AMD_INCLUDE_DIRS="/usr/include/suitesparse" \
+  -DTPL_ENABLE_BLAS=ON \
+  -DTPL_ENABLE_LAPACK=ON \
+  $SRCDIR
 RUN make -j$(nproc) && make install
 
 WORKDIR /Xyce
@@ -73,7 +81,7 @@ RUN make -j$(nproc) && make install
 #   `pwd`/src/Xyce
 
 # Add Xyce to PATH and clean installation
-RUN echo 'PATH="/XyceInstall/Serial/bin:$PATH"' >> ~/.bashrc
+RUN echo 'PATH="/XyceInstall/Serial/bin:$PATH"' >> $HOME/.bashrc
 RUN rm -rf /Xyce
 RUN rm -rf /Trilinos
 RUN rm -rf /Xyce-serial-build
@@ -83,5 +91,10 @@ RUN rm -rf /Trilinos-build
 RUN apt-get update
 RUN apt-get install -y ngspice python3-pip iverilog
 
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+
 # Make user comfortable at home
 WORKDIR /home
+ENTRYPOINT "/bin/bash"
