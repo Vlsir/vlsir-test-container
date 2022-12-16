@@ -5,13 +5,6 @@ ARG TRILINOS_VERSION
 
 ENV TZ=America/Los_Angeles DEBIAN_FRONTEND=noninteractive PATH="${PATH}"
 
-# # Build SpECTRE to all-pybindings mode
-# WORKDIR /work/spectre-build
-# RUN cmake -D CHARM_ROOT=/work/charm_7_0_0/multicore-linux-x86_64-gcc $SPECTRE_ROOT
-# RUN make -j(nproc) all-pybindings
-# RUN ./bin/LoadPython.sh
-# RUN rm -rf /work/spectre-build
-
 # The "folly" component currently fails if "fmt" is not explicitly installed first.
 RUN apt-get update && apt-get install -y cmake build-essential m4 python-dev-is-python3 \
   git gfortran bison flex libfl-dev libfftw3-dev libsuitesparse-dev libopenblas-dev \
@@ -71,7 +64,7 @@ RUN ../Xyce/configure ARCHDIR=/XyceLibs/Serial \
   --prefix=/XyceInstall/Serial
 RUN make -j$(nproc) && make install
 
-#! Regression Testing for the thorough builder
+#? Regression Testing for the thorough builder
 # RUN /Xyce_Regression/TestScripts/run_xyce_regression \
 #   --timelimit=60 \
 #   --output=`pwd`/Xyce_Test \
@@ -89,11 +82,15 @@ RUN rm -rf /Trilinos-build
 
 # Install NgSPICE
 RUN apt-get update
-RUN apt-get install -y ngspice iverilog
+RUN apt-get install -y ngspice iverilog curl
 
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
-ENV PATH="${PATH}:$HOME/.cargo/env"
+#? Install Rust
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+# ENV PATH="${PATH}:$HOME/.cargo/env"
+
+# Add Deadsnakes for later Python debugging
+RUN apt install -y software-properties-common
+RUN add-apt-repository -y ppa:deadsnakes/ppa
 
 # Make user comfortable at home
 WORKDIR /home
