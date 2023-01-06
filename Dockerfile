@@ -80,9 +80,23 @@ RUN rm -rf /Trilinos
 RUN rm -rf /Xyce-serial-build
 RUN rm -rf /Trilinos-build
 
-# Install NgSPICE
+# Install iVerilog
 RUN apt-get update
-RUN apt-get install -y ngspice iverilog curl
+RUN apt-get install -y iverilog
+
+# Install ngspice 38
+RUN apt-get install -y wget libreadline6-dev
+WORKDIR /
+RUN wget "https://sourceforge.net/projects/ngspice/files/ng-spice-rework/38/ngspice-38.tar.gz"
+RUN tar -xzvf ngspice-38.tar.gz
+RUN ls -a
+WORKDIR /ngspice-38
+RUN mkdir release
+WORKDIR /ngspice-38/release
+RUN ../configure --with-x --with-readline=yes --disable-debug
+RUN make
+RUN make install
+RUN rm -rf /ngspice-38
 
 #? Install Rust
 # RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
