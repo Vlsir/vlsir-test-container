@@ -84,19 +84,62 @@ RUN rm -rf /Trilinos-build
 RUN apt-get update
 RUN apt-get install -y iverilog
 
-# Install ngspice 38
+# Install ngspice 40
 RUN apt-get install -y wget libreadline6-dev
 WORKDIR /
-RUN wget "https://sourceforge.net/projects/ngspice/files/ng-spice-rework/38/ngspice-38.tar.gz"
-RUN tar -xzvf ngspice-38.tar.gz
+RUN wget "https://sourceforge.net/projects/ngspice/files/ng-spice-rework/40/ngspice-40.tar.gz"
+RUN tar -xzvf ngspice-40.tar.gz
 RUN ls -a
-WORKDIR /ngspice-38
+WORKDIR /ngspice-40
 RUN mkdir release
-WORKDIR /ngspice-38/release
+WORKDIR /ngspice-40/release
 RUN ../configure --with-x --with-readline=yes --disable-debug
 RUN make
 RUN make install
-RUN rm -rf /ngspice-38
+RUN rm -rf /ngspice-40
+WORKDIR /
+
+# Magic
+RUN git clone https://github.com/RTimothyEdwards/magic.git
+RUN apt-get install -y tcsh csh m4 libx11-dev tcl-dev tk-dev \
+  libcairo2-dev mesa-common-dev libncurses-dev libglu1-mesa-dev
+WORKDIR /magic
+RUN chmod +x ./configure
+RUN ./configure
+RUN make database/database.h
+RUN make -j"$(nproc)"
+RUN make install
+WORKDIR /
+
+# # Miniconda
+# RUN apt-get update && apt-get install -y curl wget bzip2
+# RUN curl -LO https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+# RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda
+# RUN rm Miniconda3-latest-Linux-x86_64.sh
+# ENV PATH="/opt/miniconda/bin:${PATH}"
+# RUN conda update -y conda
+
+# Yosys
+RUN apt-get install -y yosys
+
+#######################################################################
+# Compile iic-osic
+#######################################################################
+ARG IIC_OSIC_REPO_URL="https://github.com/iic-jku/iic-osic.git"
+ARG IIC_OSIC_REPO_COMMIT="3fa99fb2e830226ec5763a11ec963fbecc653ec3"
+ARG IIC_OSIC_NAME="iic-osic"
+ADD scripts/install_iic_osic.sh install_iic_osic.sh
+RUN bash install_iic_osic.sh
+
+#######################################################################
+# Create open_pdks (part of OpenLane)
+#######################################################################
+ARG OPEN_PDKS_REPO_URL="https://github.com/RTimothyEdwards/open_pdks"
+ARG OPEN_PDKS_REPO_COMMIT="0c37b7c76527929abfbdbd214df4bffcd260bf50"
+ARG OPEN_PDKS_NAME="open_pdks"
+ENV PDK_ROOT=/foss/pdks
+ADD scripts/install_volare.sh install_volare.sh
+RUN bash install_volare.sh
 
 #? Install Rust
 # RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
